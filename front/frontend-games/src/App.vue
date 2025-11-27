@@ -1,148 +1,209 @@
+<script setup>
+  import { ref } from 'vue';
+  import Navbar from './components/Navbar.vue';
+
+  // --- NAVEGAÇÃO ---
+  const telaAtual = ref('inicio');
+  function trocarTela(novaTela) { telaAtual.value = novaTela; }
+
+  // --- LOGIN ---
+  const email = ref('');
+  const senha = ref('');
+
+  async function fazerLogin() {
+    try {
+      const resposta = await fetch('http://localhost:3000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.value, senha: senha.value })
+      });
+      const dados = await resposta.json();
+      if (resposta.ok) {
+        alert('Bem-vindo, ' + dados.usuario + '! 🎮');
+        trocarTela('inicio');
+      } else {
+        alert('Erro: ' + dados.mensagem);
+      }
+    } catch (error) { alert('Erro no servidor.'); }
+  }
+
+  // --- CADASTRO (NOVO!) ---
+  const nomeCadastro = ref('');
+  const emailCadastro = ref('');
+  const senhaCadastro = ref('');
+
+  async function fazerCadastro() {
+    if(!nomeCadastro.value || !emailCadastro.value || !senhaCadastro.value) {
+      alert('Preencha tudo!'); return;
+    }
+    try {
+      const resposta = await fetch('http://localhost:3000/cadastro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          nome: nomeCadastro.value, 
+          email: emailCadastro.value, 
+          senha: senhaCadastro.value 
+        })
+      });
+      const dados = await resposta.json();
+      if (resposta.ok) {
+        alert('Conta criada! Agora faça login.');
+        trocarTela('login'); // Manda o usuário para a tela de login
+      } else {
+        alert('Erro: ' + dados.mensagem);
+      }
+    } catch (error) { alert('Erro no servidor.'); }
+  }
+
+  // --- DADOS (Notícias, Reviews, Partidas...) ---
+  const noticias = [
+    { id: 1, titulo: 'GTA VI Adiado', categoria: 'Mundo Aberto', imagem: '/gta6.jpg' },
+    { id: 2, titulo: 'Tinowns na Pain', categoria: 'MOBA', imagem: '/Tinowns.jpeg' },
+    { id: 3, titulo: 'Furia Campeã', categoria: 'FPS', imagem: '/furia-campea-1.jpg' },
+    { id: 4, titulo: 'Jogos Indie', categoria: 'Indie', imagem: '/indie.jpg' }
+  ];
+  const reviews = [
+    { id: 1, jogo: 'GTA VI', nota: 9.8, imagem: '/gta6.jpg', resumo: 'A espera valeu a pena?' },
+    { id: 2, jogo: 'CS 2', nota: 8.5, imagem: '/furia-campea-1.jpg', resumo: 'O FPS tático evoluiu.' },
+    { id: 3, jogo: 'Indies 2025', nota: 10.0, imagem: '/indie.jpg', resumo: 'Grandes emoções.' },
+    { id: 4, jogo: 'LoL Meta', nota: 7.5, imagem: '/Tinowns.jpeg', resumo: 'O estado do jogo.' }
+  ];
+  const partidas = [
+    { id: 1, jogo: 'LoL', torneio: 'CBLOL', timeA: 'LOUD', timeB: 'paiN', data: 'AO VIVO 🔴', status: 'live' },
+    { id: 2, jogo: 'CS2', torneio: 'IEM', timeA: 'FURIA', timeB: 'FaZe', data: '18:00', status: 'proximo' },
+    { id: 3, jogo: 'Valorant', torneio: 'VCT', timeA: 'Sentinels', timeB: 'LOUD', data: 'Amanhã', status: 'proximo' },
+    { id: 4, jogo: 'R6', torneio: 'BR6', timeA: 'W7M', timeB: 'Liquid', data: 'Sexta', status: 'proximo' }
+  ];
+</script>
+
 <template>
   <div id="app">
-    <header class="banner">
-      <div class="banner-content">
-        <h1>PORTAL GAMER</h1>
-        <p>As novidades mais quentes dos E-sports</p>
+    <Navbar @navegar="trocarTela" />
+
+    <main class="container">
+      
+      <div v-if="telaAtual === 'inicio'" class="conteudo-centralizado">
+        <section class="destaque">
+          <span class="tag">Destaque</span>
+          <h1>O Futuro dos Games</h1>
+          <p>Confira as novidades mais quentes.</p>
+          <div class="video-container">
+            <iframe width="100%" height="100%" src="https://www.youtube.com/embed/QdBZY2fkU-0" title="Video" frameborder="0" allowfullscreen></iframe>
+          </div>
+        </section>
+        <section class="feed">
+          <h2>Últimas Notícias</h2>
+          <div class="lista-flex">
+            <article v-for="news in noticias" :key="news.id" class="card">
+              <img :src="news.imagem" class="card-image">
+              <div class="card-content">
+                <span class="card-tag">{{ news.categoria }}</span>
+                <h3>{{ news.titulo }}</h3>
+                <button>Ler mais</button>
+              </div>
+            </article>
+          </div>
+        </section>
       </div>
-    </header>
 
-    <div class="container">
-      <section class="video-section">
-        <h2><span class="highlight">|</span> Vídeo em Destaque</h2>
-        <div class="video-wrapper">
-          <video controls width="100%" poster="https://img.youtube.com/vi/QdBZY2fkU-0/maxresdefault.jpg">
-           <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-            Seu navegador não suporta vídeos.
-          </video>
-        </div>
-      </section>
-
-      <section class="feed-section">
-        <h2><span class="highlight">|</span> Últimas Notícias</h2>
-        
-        <div v-if="loading" class="loading">Carregando novidades...</div>
-
-        <div v-else class="news-grid">
-          <div v-for="item in noticias" :key="item.id" class="card">
-            <div class="card-img" :style="{ backgroundImage: 'url(' + item.imagem_capa + '), url(https://via.placeholder.com/400x200)' }">
-              <span class="tag">{{ item.categoria_nome }}</span>
-            </div>
-            <div class="card-content">
-              <h3>{{ item.titulo }}</h3>
-              <p>{{ item.resumo }}</p>
-              <button>Ler mais</button>
+      <div v-if="telaAtual === 'reviews'" class="conteudo-centralizado">
+        <h2 class="titulo-secao">Análises e Notas</h2>
+        <div class="lista-flex">
+          <div v-for="review in reviews" :key="review.id" class="review-card">
+            <div class="nota-badge">{{ review.nota }}</div>
+            <img :src="review.imagem" class="review-img">
+            <div class="review-info">
+              <h3>{{ review.jogo }}</h3>
+              <p>{{ review.resumo }}</p>
+              <button class="btn-ler">Ler Análise</button>
             </div>
           </div>
         </div>
-      </section>
-    </div>
+      </div>
+
+      <div v-if="telaAtual === 'esports'" class="conteudo-centralizado">
+        <h2 class="titulo-secao">Agenda de Partidas</h2>
+        <div class="lista-flex-coluna">
+          <div v-for="partida in partidas" :key="partida.id" class="match-card" :class="{ 'live-border': partida.status === 'live' }">
+            <div class="match-time">
+              <span v-if="partida.status === 'live'" class="live-badge">AO VIVO</span>
+              <span v-else>{{ partida.data }}</span>
+            </div>
+            <div class="match-teams">
+              <span>{{ partida.timeA }}</span>
+              <span class="versus">VS</span>
+              <span>{{ partida.timeB }}</span>
+            </div>
+            <button class="btn-assistir">Assistir</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="telaAtual === 'login'" class="conteudo-centralizado">
+        <h1>Login</h1>
+        <form class="form-login" @submit.prevent="fazerLogin">
+          <input type="email" placeholder="Email" v-model="email" required>
+          <input type="password" placeholder="Senha" v-model="senha" required>
+          <button type="submit">Entrar</button>
+        </form>
+        <p class="link-texto">Não tem conta? <a href="#" @click.prevent="trocarTela('cadastro')">Crie agora</a></p>
+      </div>
+
+      <div v-if="telaAtual === 'cadastro'" class="conteudo-centralizado">
+        <h1>Criar Conta</h1>
+        <form class="form-login" @submit.prevent="fazerCadastro">
+          <input type="text" placeholder="Seu Nome (ex: João Gamer)" v-model="nomeCadastro" required>
+          <input type="email" placeholder="Seu Email" v-model="emailCadastro" required>
+          <input type="password" placeholder="Crie uma Senha" v-model="senhaCadastro" required>
+          <button type="submit">Cadastrar</button>
+        </form>
+        <p class="link-texto">Já tem conta? <a href="#" @click.prevent="trocarTela('login')">Faça Login</a></p>
+      </div>
+
+    </main>
   </div>
 </template>
 
-<script>
-import axios from 'axios';
+<style scoped>
+/* --- GERAL --- */
+.container { padding-top: 100px; background-color: #1a1a1a; min-height: 100vh; color: white; padding-bottom: 50px; display: flex; flex-direction: column; align-items: center; }
+.conteudo-centralizado { width: 100%; max-width: 800px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.titulo-secao { color: #ff4500; margin-bottom: 30px; text-transform: uppercase; border-bottom: 2px solid #ff4500; padding-bottom: 5px; display: inline-block; }
 
-export default {
-  data() {
-    return {
-      noticias: [],
-      loading: true
-    }
-  },
-  async mounted() {
-    try {
-      // Aqui ele bate na porta 3000 (onde está o Node) para pegar os dados
-      const response = await axios.get('http://localhost:3000/api/noticias');
-      this.noticias = response.data;
-    } catch (error) {
-      console.error("Erro ao buscar notícias:", error);
-      alert("Erro: Não consegui conectar no servidor. O 'node server.js' está rodando?");
-    } finally {
-      this.loading = false;
-    }
-  }
-}
-</script>
+/* HOME */
+.destaque { background: #222; padding: 30px; border-radius: 20px; width: 100%; margin-bottom: 40px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+.video-container { width: 100%; aspect-ratio: 16/9; margin-top: 20px; border-radius: 10px; overflow: hidden; }
+.video-container iframe { border: none; }
+.tag { background: #ff4500; padding: 5px 15px; border-radius: 20px; font-weight: bold; margin-bottom: 10px; }
 
-<style>
-/* CSS estilo 'Dark Mode Gamer' */
-body {
-  margin: 0;
-  background-color: #0f0f12; /* Fundo preto quase roxo */
-  color: #fff;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+/* LISTAS */
+.lista-flex { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; }
+.card, .review-card { background: #222; width: 250px; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding-bottom: 15px; border: 1px solid #333; }
+.card-image, .review-img { width: 100%; height: 150px; object-fit: cover; }
+.card-content, .review-info { padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.card-tag { color: #ff4500; font-weight: bold; font-size: 0.8rem; }
+h3 { margin: 0; font-size: 1.1rem; }
+button, .btn-ler { background: transparent; border: 1px solid #555; color: white; padding: 5px 20px; border-radius: 20px; cursor: pointer; transition: 0.3s; }
+button:hover, .btn-ler:hover { background: white; color: black; }
 
-.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
-.highlight { color: #00ff88; font-weight: bold; }
+/* REVIEWS & ESPORTS */
+.review-card { position: relative; }
+.nota-badge { position: absolute; top: 10px; right: 10px; background: #ff4500; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; box-shadow: 0 0 10px black; }
+.lista-flex-coluna { display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
+.match-card { background: #222; width: 100%; padding: 20px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; gap: 15px; border-left: 5px solid #555; text-align: center; }
+.live-border { border-left-color: #ff0000; background: linear-gradient(to bottom, rgba(255,0,0,0.05), #222); }
+.live-badge { background: red; padding: 3px 10px; border-radius: 5px; font-weight: bold; font-size: 0.8rem; }
+.match-teams { font-size: 1.2rem; font-weight: bold; display: flex; gap: 10px; align-items: center; }
+.versus { color: #ff4500; font-size: 0.9rem; }
+.btn-assistir { background: #333; border: none; padding: 10px 30px; }
+.btn-assistir:hover { background: #ff4500; color: white; }
 
-/* Banner */
-.banner {
-  background: linear-gradient(to right, #1a2a6c, #b21f1f, #fdbb2d);
-  height: 250px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-.banner h1 { font-size: 3rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-
-/* Grid de Notícias */
-.news-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
-
-.card {
-  background: #1e1e24;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: transform 0.2s;
-  border: 1px solid #333;
-}
-.card:hover { transform: translateY(-5px); border-color: #00ff88; }
-
-.card-img {
-  height: 180px;
-  background-size: cover;
-  background-position: center;
-  position: relative;
-}
-
-.tag {
-  background: #00ff88;
-  color: #000;
-  padding: 4px 8px;
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-weight: bold;
-  font-size: 0.8rem;
-  border-radius: 4px;
-}
-
-.card-content { padding: 15px; }
-.card h3 { margin-top: 0; color: #fff; }
-.card p { color: #aaa; font-size: 0.9rem; }
-.card button {
-  background: transparent;
-  border: 1px solid #00ff88;
-  color: #00ff88;
-  padding: 8px 16px;
-  cursor: pointer;
-  margin-top: 10px;
-  border-radius: 4px;
-}
-.card button:hover { background: #00ff88; color: #000; }
-
-/* Vídeo */
-.video-section { margin-bottom: 40px; }
-.video-wrapper {
-  border: 2px solid #333;
-  border-radius: 8px;
-  overflow: hidden;
-}
+/* FORMS */
+.form-login { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 300px; background: #222; padding: 30px; border-radius: 15px; border: 1px solid #333; }
+.form-login input { padding: 12px; border-radius: 5px; border: 1px solid #444; background: #111; color: white; text-align: center; }
+.form-login button { background: #ff4500; border: none; color: white; font-weight: bold; padding: 12px; cursor: pointer; }
+.form-login button:hover { background: white; color: #ff4500; }
+.link-texto { margin-top: 15px; color: #ccc; }
+.link-texto a { color: #ff4500; text-decoration: none; font-weight: bold; }
 </style>

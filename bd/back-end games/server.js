@@ -1,47 +1,65 @@
 const express = require('express');
 const mysql = require('mysql2');
-const cors = require('cors');
+const cors = require('cors'); // Permite o Front falar com o Back
 
 const app = express();
 app.use(express.json());
-app.use(cors()); // Permite que o Vue acesse os dados
+app.use(cors());
 
-// Conexão com o banco do XAMPP
+// --- CONFIGURAÇÃO DO BANCO ---
+// ⚠️ Verifique se a senha do seu root está certa!
 const db = mysql.createConnection({
     host: 'localhost',
-    user: 'root',      // Padrão do XAMPP
-    password: '',      // Senha vazia (Padrão do XAMPP)
+    user: 'root',
+    password: '', // Se tiver senha no seu MySQL, coloque aqui
     database: 'site_games'
 });
 
 db.connect((err) => {
     if (err) {
-        console.error('Erro ao conectar no banco:', err);
+        console.error('Erro ao conectar no MySQL:', err);
     } else {
-        console.log('Conectado ao MySQL do XAMPP com sucesso!');
+        console.log('Conectado ao MySQL com sucesso!');
     }
 });
 
-// caminho para pegar as Notícias
-app.get('/api/noticias', (req, res) => {
-    // Busca as notícias e junta com o nome da categoria
-    const sql = `
-        SELECT n.*, c.nome as categoria_nome 
-        FROM noticia n
-        JOIN categoria c ON n.categoria_id = c.id
-    `;
-    db.query(sql, (err, result) => {
-        if (err) return res.json(err);
-        return res.json(result);
+// --- ROTA DE LOGIN ---
+app.post('/login', (req, res) => {
+    const { email, senha } = req.body;
+
+    // Procura o usuário no banco
+    const sql = "SELECT * FROM tb_usuarios WHERE email = ? AND senha = ?";
+    
+    db.query(sql, [email, senha], (err, result) => {
+        if (err) return res.status(500).send(err);
+
+        if (result.length > 0) {
+            // Achou o usuário!
+            res.status(200).json({ mensagem: "Login realizado!", usuario: result[0].nome });
+        } else {
+            // Não achou ou senha errada
+            res.status(401).json({ mensagem: "Email ou senha incorretos!" });
+        }
     });
 });
+// --- ROTA DE CADASTRO (NOVA) ---
+app.post('/cadastro', (req, res) => {
+    const { nome, email, senha } = req.body;
 
-// caminho para pegar os Vídeos
-app.get('/api/videos', (req, res) => {
-    const sql = 'SELECT * FROM video';
-    db.query(sql, (err, result) => {
-        if (err) return res.json(err);
-        return res.json(result);
+    // Verifica se o email já existe (opcional, mas bom)
+    const sqlCheck = "SELECT * FROM tb_usuarios WHERE email = ?";
+    db.query(sqlCheck, [email], (err, result) => {
+        if (err) return res.status(500).send(err);
+        if (result.length > 0) {
+            return res.status(400).json({ mensagem: "Email já cadastrado!" });
+        }
+
+        // Se não existe, cadastra
+        const sqlInsert = "INSERT INTO tb_usuarios (nome, email, senha) VALUES (?, ?, ?)";
+        db.query(sqlInsert, [nome, email, senha], (err, result) => {
+            if (err) return res.status(500).send(err);
+            res.status(201).json({ mensagem: "Usuário criado com sucesso!" });
+        });
     });
 });
 
