@@ -9,10 +9,11 @@ app.use(cors());
 // --- CONFIGURAÇÃO DO BANCO ---
 // ⚠️ Verifique se a senha do seu root está certa!
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '', // Se tiver senha no seu MySQL, coloque aqui
-    database: 'site_games'
+    host: process.env.MYSQLHOST,
+    user: process.env.MYSQLUSER,
+    password: process.env.MYSQLPASSWORD,
+    database: process.env.MYSQLDATABASE,
+    port: process.env.MYSQLPORT
 });
 
 db.connect((err) => {
